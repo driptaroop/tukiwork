@@ -1,0 +1,129 @@
+#!/bin/ksh
+##########################################################################
+#                        CINGULAR Customizations
+###########################################################################
+# HISTORY
+# =======
+#
+# VERSION DATE           AUTHOR(S)         DESCRIPTION
+# ------- -----------   ---------------   ------------------------------------
+#            
+# 1.0      6-May-2015    Kaushiki Chowdhury    Initial Version.
+##########################################################################
+
+progname=$0
+p_sql_login=$1
+p_user_id=$2
+p_user_name=$3
+p_request_id=$4
+EMAIL=$5
+FILE_NAME=$6
+OUT_FILE_DIR=$7
+NEWSUBJ=$8
+SENDER=$9
+P_FLAG=${10}
+
+
+
+echo 'progname' $0
+echo 'email' $EMAIL
+echo 'NEWSUBJ' $NEWSUBJ
+echo 'Sender' $SENDER
+echo 'flag ' ${10}
+
+if [ $P_FLAG == 'UPLD_SUCC' ]; then
+    echo "Sending Upload Successful messsage to $EMAIL "
+    echo "\n Hi Planner, \n\n The upload has completed successfully \n\n Thanks." > email_body.html
+    if [ -z "$EMAIL" ]; then
+        echo "Email Id does not exist for the Creator in FND_USER table"
+    else
+	echo 'sending mail'
+        cat email_body.html - |mailx -r "$SENDER" -s "$NEWSUBJ" $EMAIL
+	echo 'sent mail'
+    fi
+else
+    echo 'file_name' $6
+    echo 'out_file_dir' $7
+
+    HIST_DIR=$CCWDMP_TOP/data/hist
+    OUT_FILE_PATH=$OUT_FILE_DIR
+    echo 'File to Attach Path:' $OUT_FILE_PATH
+
+
+    COPY_TO_PATH=${OUT_FILE_PATH}'/'${FILE_NAME}
+
+
+    FILE_NM=${COPY_TO_PATH}
+    echo "File name $FILE_NM"
+
+    FILE_SIZE=`ls -l $FILE_NM| awk 'BEGIN{mega=1048576} $5 >= mega {$5 = $5/mega "MB"} {print $5}'`
+    echo "File size is $FILE_SIZE "
+    dot=`echo $FILE_SIZE | cut -c2`
+    
+    if [ $P_FLAG == 'VLDTN_FAIL' ]; then
+	echo "Sending Validation Failure Notification to $EMAIL "
+        if [ $dot -eq '.' ];   then
+            first_digit=`echo $FILE_SIZE | cut -c1`
+            
+            if [ $first_digit -ge 20 ]; then
+            echo "File is greater than 20MB."
+                echo "\n Hi Planner, \n\n The forecast data has failed validation. Please work with Production Support Team to get the error file $FILE_NM from $OUT_FILE_DIR as it is TOO large for attachment \n\n Thanks." > email_body.html
+                if [ -z "$EMAIL" ]; then
+                    echo "Email Id does not exist for the Creator in FND_USER table"
+                else
+                    cat email_body.html - |mailx -r "$SENDER" -s "$NEWSUBJ" $EMAIL
+                fi
+            else     
+                echo "\n Hi Planner, \n\n The forecast data has failed validation. See the attachment. \n\n Thanks." > email_body.html
+                if [ -z "$EMAIL" ]; then
+                    echo "Email Id does not exist for the Creator in FND_USER table"
+                else
+                    uuencode $FILE_NM "$FILE_NAME" | cat email_body.html - |mailx -r "$SENDER" -s "$NEWSUBJ" $EMAIL
+                fi
+            fi
+        else
+            echo "\n Hi Planner, \n\n The forecast data has failed validation. See the attachment. \n\n Thanks." > email_body.html
+            if [ -z "$EMAIL" ]; then
+            echo "Email Id does not exist for the Creator in FND_USER table"
+            else
+            uuencode $FILE_NM "$FILE_NAME" | cat email_body.html - |mailx -r "$SENDER" -s "$NEWSUBJ" $EMAIL
+            fi
+        fi
+    else
+	echo "Sending Upload Error mail to $EMAIL "
+        if [ $dot -eq '.' ];   then
+            first_digit=`echo $FILE_SIZE | cut -c1`
+            
+            if [ $first_digit -ge 20 ]; then
+            echo "File is greater than 20MB."
+                echo "\n Hi Planner, \n\n The upload has completed with ERROR. Please work with Production Support Team to get the error file $FILE_NAME from $OUT_FILE_DIR as it is TOO large for attachment. \n\n Thanks." > email_body.html
+                if [ -z "$EMAIL" ]; then
+                    echo "Email Id does not exist for the Creator in FND_USER table"
+                else
+                    cat email_body.html - |mailx -r "$SENDER" -s "$NEWSUBJ" $EMAIL
+                fi
+            else     
+                echo "\n Hi Planner, \n\n The upload has completed with ERROR. See the attachment. \n\n Thanks." > email_body.html
+                if [ -z "$EMAIL" ]; then
+                    echo "Email Id does not exist for the Creator in FND_USER table"
+                else
+                    uuencode $FILE_NM "$FILE_NAME" | cat email_body.html - |mailx -r "$SENDER" -s "$NEWSUBJ" $EMAIL
+                fi
+            fi
+        else
+            echo "\n Hi Planner, \n\n The upload has completed with ERROR. See the attachment. \n\n Thanks." > email_body.html
+            if [ -z "$EMAIL" ]; then
+            echo "Email Id does not exist for the Creator in FND_USER table"
+            else
+            uuencode $FILE_NM "$FILE_NAME" | cat email_body.html - |mailx -r "$SENDER" -s "$NEWSUBJ" $EMAIL
+            fi
+        fi
+    
+    fi
+    echo 'moving file to $CCWDMP_TOP/data/out'
+    mv $FILE_NM $CCWDMP_TOP/data/out
+fi
+
+exit 0
+
+

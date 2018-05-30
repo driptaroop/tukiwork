@@ -1,0 +1,21 @@
+#!/bin/ksh
+#################################################################################################
+# PROGRAM    :   F-05 DEMANTRA LOADER PROGRAM
+# AUTHOR     :   KC7381
+# DESCRIPTION:   INSTALL SCRIPT
+# DATE       :   29-APR-15
+# FILE NAME  :   CUST_LOAD_FORECAST_DEMANTRA.install
+# VERSION    :   1.0
+#################################################################################################
+. $ORACLE_SID.env
+
+fn_get_pass apps
+echo ----------Creating softlink-------
+ln -s $FND_TOP/bin/fndcpesr $CCWDMP_TOP/bin/CUST_FRCST_ERR_MAIL
+echo ----------Created softlink-------
+sqlplus apps/$APPS_PASS @$CCWDMP_TOP/admin/sql/CUST_CUSTMR_FORECAST_STG.sql
+sqlplus apps/$APPS_PASS @$CCWDMP_TOP/admin/sql/CUST_PURCHS_FORECAST_STG.sql
+sqlplus apps/$APPS_PASS @$CCWDMP_TOP/admin/sql/CUST_DEMANTRA_LOADER_ERR_MSG.sql
+sqlplus apps/$APPS_PASS @$CCWDMP_TOP/admin/sql/CUST_LOAD_FORECAST_DEMANTRA_PKG.sql
+
+exit
